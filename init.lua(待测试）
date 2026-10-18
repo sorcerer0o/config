@@ -1,123 +1,132 @@
 local opt = vim.opt
 
+vim.g.mapleader = ' '
+vim.g.maplocalleader = ' '
+
 opt.number = true
 opt.relativenumber = true
 opt.signcolumn = 'auto'
 opt.termguicolors = true
-opt.background = 'dark'
 vim.cmd.colorscheme('habamax')
 opt.wrap = true
-opt.startofline = true
-
 opt.tabstop = 8
 opt.shiftwidth = 4
 opt.softtabstop = 4
 opt.expandtab = true
 opt.autoindent = true
-
 opt.ignorecase = true
 opt.smartcase = true
 opt.hlsearch = true
 opt.incsearch = true
-
 opt.laststatus = 3
 opt.linebreak = true
 opt.breakindent = true
 opt.showcmd = true
 opt.wildmode = 'longest:full,full'
 opt.wildignorecase = true
-opt.wildoptions = 'pum,fuzzy'
-opt.hidden = true
+opt.wildoptions = 'fuzzy,pum,tagfile'
 opt.autoread = true
-
+opt.hidden = true
 opt.splitright = true
 opt.splitbelow = true
-
 opt.clipboard = 'unnamedplus'
 opt.updatetime = 300
-opt.ttimeoutlen = 50
-
-opt.completeopt = { 'menuone', 'noselect', 'noinsert', 'preview' }
+opt.completeopt = { 'fuzzy', 'menuone', 'noselect', 'noinsert', 'popup' }
 
 vim.cmd('filetype plugin indent on')
 vim.cmd('syntax enable')
 
 vim.diagnostic.config({
-    -- virtual_text = true,
-    -- virtual_lines = true,
-    virtual_text = {
-        current_line = true,
-    },
-    signs = true,
-    underline = true,
-    severity_sort = true,
+  signs = true,
+  underline = true,
+  severity_sort = true,
+  float = { wrap = true, scope = 'cursor', focusable = true },
 })
 
 vim.pack.add({
-    { src = 'https://github.com/neovim/nvim-lspconfig' },
-    { src = 'https://github.com/Saghen/blink.lib' },
-    { src = 'https://github.com/Saghen/blink.cmp' },
-    { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },
-    { src = 'https://github.com/mks-h/treesitter-autoinstall.nvim' },
-    { src = 'https://github.com/google/vim-maktaba.git' },
-    { src = 'https://github.com/google/vim-glaive.git' },
-    { src = 'https://github.com/google/vim-codefmt.git' },
+  { src = 'https://github.com/neovim/nvim-lspconfig' },
+  { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },
+  { src = 'https://github.com/google/vim-maktaba.git' },
+  { src = 'https://github.com/google/vim-glaive.git' },
+  { src = 'https://github.com/google/vim-codefmt.git' },
 })
 
-local cmp = require('blink.cmp')
-
-cmp.build():pwait()
-
-cmp.setup({
-    keymap = {
-        preset = 'default',
+vim.lsp.config('lua_ls', {
+  cmd = { 'lua-language-server' },
+  filetypes = { 'lua' },
+  root_markers = { '.luarc.json', '.luarc.jsonc', '.git' },
+  settings = {
+    Lua = {
+      runtime = { version = 'LuaJIT' },
+      diagnostics = { globals = { 'vim' } },
+      workspace = { checkThirdParty = false },
     },
-
-    sources = {
-        default = {
-            'lsp',
-            'path',
-            'snippets',
-            'buffer',
-        },
-    },
-
-    fuzzy = {
-        implementation = 'rust',
-    },
+  },
 })
 
-vim.lsp.config('*', {
-    capabilities = require('blink.cmp').get_lsp_capabilities(),
-})
-
-vim.lsp.enable({
+vim.lsp.config('clangd', {
+  cmd = {
     'clangd',
-    'lua_ls',
-    'pyright',
-});
+    '--background-index',
+    '--clang-tidy',
+    '--completion-style=detailed',
+    '--header-insertion=iwyu'
+  },
+  filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
+  root_markers = { 'compile_commands.json', 'compile_flags.txt', '.git' },
+})
+
+vim.lsp.config('pyright', {
+  cmd = { 'pyright-langserver', '--stdio' },
+  filetypes = { 'python' },
+  root_markers = { 'pyproject.toml', 'setup.py', 'setup.cfg', '.git' },
+})
+
+vim.lsp.config('html', {
+  cmd = { 'vscode-html-language-server', '--stdio' },
+  filetypes = { 'html' },
+  root_markers = { 'package.json', '.git' },
+})
+
+vim.lsp.config('emmet_ls', {
+  cmd = { 'emmet-ls', '--stdio' },
+  filetypes = { 'html', 'css', 'javascript', 'typescript' },
+  root_markers = { '.git' },
+  init_options = {
+    html = { options = { ['bem.enabled'] = true } },
+  },
+})
+
+vim.lsp.enable('lua_ls')
+vim.lsp.enable('clangd')
+vim.lsp.enable('pyright')
+vim.lsp.enable('html')
+vim.lsp.enable('emmet_ls')
 
 require('nvim-treesitter').setup()
-require('treesitter-autoinstall').setup()
-require('nvim-treesitter').install({})
+require('nvim-treesitter').install({ 'c', 'cpp', 'lua', 'python', 'vim', 'vimdoc', 'html', 'css' })
 
 vim.api.nvim_create_autocmd('FileType', {
-    callback = function()
-        pcall(vim.treesitter.start)
-    end,
-})
-
-vim.api.nvim_create_autocmd('FileType', {
-    group = vim.api.nvim_create_augroup('c_settings', { clear = true }),
-    pattern = { 'c', 'cpp' },
-    callback = function()
-        vim.opt_local.cindent = true
-        vim.opt_local.expandtab = true
-        vim.opt_local.tabstop = 2
-        vim.opt_local.shiftwidth = 2
-        vim.opt_local.softtabstop = 2
-        vim.opt_local.textwidth = 80
-    end,
+  callback = function()
+    pcall(vim.treesitter.start)
+    vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+  end,
 })
 
 vim.g.glaive_codefmt_plugin_mappings = true
+vim.fn['glaive#Install']()
+
+vim.api.nvim_create_autocmd('FileType', {
+  group = vim.api.nvim_create_augroup('google_cpp_style', { clear = true }),
+  pattern = { 'c', 'cpp' },
+  callback = function()
+    vim.opt_local.expandtab = true
+    vim.opt_local.tabstop = 2
+    vim.opt_local.shiftwidth = 2
+    vim.opt_local.softtabstop = 2
+    vim.opt_local.textwidth = 80
+    vim.opt_local.cindent = true
+  end,
+})
+
+
