@@ -1,8 +1,5 @@
 local opt = vim.opt
 
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
-
 opt.number = true
 opt.relativenumber = true
 opt.signcolumn = 'auto'
@@ -29,6 +26,9 @@ opt.autoread = true
 opt.hidden = true
 opt.splitright = true
 opt.splitbelow = true
+opt.splitkeep = 'screen'
+opt.inccommand = 'split'
+opt.switchbuf = 'useopen,usetab'
 opt.clipboard = 'unnamedplus'
 opt.updatetime = 300
 opt.completeopt = { 'fuzzy', 'menuone', 'noselect', 'noinsert', 'popup' }
@@ -37,96 +37,135 @@ vim.cmd('filetype plugin indent on')
 vim.cmd('syntax enable')
 
 vim.diagnostic.config({
-  signs = true,
-  underline = true,
-  severity_sort = true,
-  float = { wrap = true, scope = 'cursor', focusable = true },
+    signs = true,
+    underline = true,
+    severity_sort = true,
+    float = { wrap = true, scope = 'cursor', focusable = true },
 })
 
 vim.pack.add({
-  { src = 'https://github.com/neovim/nvim-lspconfig' },
-  { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },
-  { src = 'https://github.com/google/vim-maktaba.git' },
-  { src = 'https://github.com/google/vim-glaive.git' },
-  { src = 'https://github.com/google/vim-codefmt.git' },
+    { src = 'https://github.com/neovim/nvim-lspconfig' },
+    { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },
+    { src = 'https://github.com/google/vim-maktaba.git' },
+    { src = 'https://github.com/google/vim-glaive.git' },
+    { src = 'https://github.com/google/vim-codefmt.git' },
+    { src = 'https://github.com/tpope/vim-repeat' },
 })
 
 vim.lsp.config('lua_ls', {
-  cmd = { 'lua-language-server' },
-  filetypes = { 'lua' },
-  root_markers = { '.luarc.json', '.luarc.jsonc', '.git' },
-  settings = {
-    Lua = {
-      runtime = { version = 'LuaJIT' },
-      diagnostics = { globals = { 'vim' } },
-      workspace = { checkThirdParty = false },
+    cmd = { 'lua-language-server' },
+    filetypes = { 'lua' },
+    root_markers = {
+        '.luarc.json',
+        '.luarc.jsonc',
+        '.emmyrc.json',
+        '.luacheckrc',
+        'stylua.toml',
+        '.stylua.toml',
+        'selene.toml',
+        'selene.yml',
+        '.git',
     },
-  },
+    settings = {
+        Lua = {
+            runtime = { version = 'LuaJIT' },
+            diagnostics = { globals = { 'vim' } },
+            workspace = {
+                checkThirdParty = false,
+                library = { vim.env.VIMRUNTIME },
+            },
+        },
+    },
 })
 
 vim.lsp.config('clangd', {
-  cmd = {
-    'clangd',
-    '--background-index',
-    '--clang-tidy',
-    '--completion-style=detailed',
-    '--header-insertion=iwyu'
-  },
-  filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
-  root_markers = { 'compile_commands.json', 'compile_flags.txt', '.git' },
+    cmd = {
+        'clangd',
+        '--background-index',
+        '--clang-tidy',
+        '--completion-style=detailed',
+        '--header-insertion=iwyu'
+    },
+    filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
+    root_markers = {  
+        '.clangd',
+        '.clang-tidy',
+        '.clang-format',
+        'compile_commands.json',
+        'compile_flags.txt',
+        '.git'
+    },
 })
 
 vim.lsp.config('pyright', {
-  cmd = { 'pyright-langserver', '--stdio' },
-  filetypes = { 'python' },
-  root_markers = { 'pyproject.toml', 'setup.py', 'setup.cfg', '.git' },
+    cmd = { 'pyright-langserver', '--stdio' },
+    filetypes = { 'python' },
+    root_markers = {
+        'pyrightconfig.json',
+        'pyproject.toml',
+        'setup.py',
+        'setup.cfg',
+        'requirements.txt',
+        'Pipfile',
+        '.git'
+    },
 })
 
-vim.lsp.config('html', {
-  cmd = { 'vscode-html-language-server', '--stdio' },
-  filetypes = { 'html' },
-  root_markers = { 'package.json', '.git' },
-})
-
-vim.lsp.config('emmet_ls', {
-  cmd = { 'emmet-ls', '--stdio' },
-  filetypes = { 'html', 'css', 'javascript', 'typescript' },
-  root_markers = { '.git' },
-  init_options = {
-    html = { options = { ['bem.enabled'] = true } },
-  },
+vim.lsp.config('jsonls', {
+    cmd = { 'vscode-json-language-server', '--stdio' },
+    filetypes = { 'json', 'jsonc' },
+    root_markers = {
+        'package.json',
+        'tsconfig.json',
+        '.editorconfig',
+        '.git'
+    },
+    init_options = { provideFormatter = true },
+    settings = {
+        json = {
+            format = { enable = true },
+            validate = { enable = true },
+        },
+    },
 })
 
 vim.lsp.enable('lua_ls')
 vim.lsp.enable('clangd')
 vim.lsp.enable('pyright')
-vim.lsp.enable('html')
-vim.lsp.enable('emmet_ls')
+vim.lsp.enable('jsonls')
 
 require('nvim-treesitter').setup()
-require('nvim-treesitter').install({ 'c', 'cpp', 'lua', 'python', 'vim', 'vimdoc', 'html', 'css' })
-
-vim.api.nvim_create_autocmd('FileType', {
-  callback = function()
-    pcall(vim.treesitter.start)
-    vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
-  end,
+require('nvim-treesitter').install({
+    'c',
+    'cpp',
+    'objc',
+    'lua',
+    'python',
+    'vim',
+    'vimdoc',
+    'json',
+    'json5'
 })
 
-vim.g.glaive_codefmt_plugin_mappings = true
+vim.api.nvim_create_autocmd('FileType', {
+    group = vim.api.nvim_create_augroup('ts_highlight', { clear = true }),
+    callback = function(ev)
+        pcall(vim.treesitter.start, ev.buf)
+    end,
+})
+
 vim.fn['glaive#Install']()
+vim.cmd("Glaive codefmt plugin[mappings]")
 
 vim.api.nvim_create_autocmd('FileType', {
-  group = vim.api.nvim_create_augroup('google_cpp_style', { clear = true }),
-  pattern = { 'c', 'cpp' },
-  callback = function()
-    vim.opt_local.expandtab = true
-    vim.opt_local.tabstop = 2
-    vim.opt_local.shiftwidth = 2
-    vim.opt_local.softtabstop = 2
-    vim.opt_local.textwidth = 80
-    vim.opt_local.cindent = true
-  end,
+    group = vim.api.nvim_create_augroup('google_cpp_style', { clear = true }),
+    pattern = { 'c', 'cpp', 'objc', 'objcpp' },
+    callback = function()
+        vim.opt_local.expandtab = true
+        vim.opt_local.tabstop = 2
+        vim.opt_local.shiftwidth = 2
+        vim.opt_local.softtabstop = 2
+        vim.opt_local.textwidth = 80
+    end,
 })
-
 
