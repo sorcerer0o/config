@@ -44,12 +44,8 @@ vim.diagnostic.config({
 })
 
 vim.pack.add({
-    { src = 'https://github.com/neovim/nvim-lspconfig' },
+    -- { src = 'https://github.com/neovim/nvim-lspconfig' },
     { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },
-    { src = 'https://github.com/google/vim-maktaba.git' },
-    { src = 'https://github.com/google/vim-glaive.git' },
-    { src = 'https://github.com/google/vim-codefmt.git' },
-    { src = 'https://github.com/tpope/vim-repeat' },
 })
 
 vim.lsp.config('lua_ls', {
@@ -129,6 +125,18 @@ vim.lsp.config('jsonls', {
     },
 })
 
+vim.api.nvim_create_autocmd('LspAttach', {
+    callback = function(ev)
+        vim.lsp.completion.enable(true, ev.data.client_id, ev.buf, {
+            autotrigger = true,
+        })
+        vim.lsp.inlay_hint.enable(true, {
+            bufnr = ev.buf,
+            client_id = ev.data.client_id,
+        })
+    end,
+})
+
 vim.lsp.enable('lua_ls')
 vim.lsp.enable('clangd')
 vim.lsp.enable('pyright')
@@ -154,9 +162,6 @@ vim.api.nvim_create_autocmd('FileType', {
     end,
 })
 
-vim.fn['glaive#Install']()
-vim.cmd("Glaive codefmt plugin[mappings]")
-
 vim.api.nvim_create_autocmd('FileType', {
     group = vim.api.nvim_create_augroup('google_cpp_style', { clear = true }),
     pattern = { 'c', 'cpp', 'objc', 'objcpp' },
@@ -166,6 +171,7 @@ vim.api.nvim_create_autocmd('FileType', {
         vim.opt_local.shiftwidth = 2
         vim.opt_local.softtabstop = 2
         vim.opt_local.textwidth = 80
+
+        vim.opt_local.formatexpr = 'v:lua.vim.lsp.formatexpr()'
     end,
 })
-
