@@ -13,7 +13,7 @@ opt.smartcase = true
 opt.hlsearch = true
 opt.incsearch = true
 opt.laststatus = 2
-opt.winborder = "rounded"
+opt.winborder = 'none'
 opt.confirm = true
 opt.wrap = true
 opt.linebreak = true
@@ -54,8 +54,7 @@ vim.pack.add({
 
 opt.background = "dark"
 opt.termguicolors = true
--- vim.cmd.colorscheme('default')
-vim.cmd.colorscheme('habamax')
+vim.cmd.colorscheme('default')
 
 vim.lsp.config('lua_ls', {
         cmd = { 'lua-language-server' },
