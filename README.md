@@ -16,6 +16,14 @@ Requires a Nerd Font (e.g. JetBrainsMono Nerd Font) for icons.
 <a href="https://dotfyle.com/sorcerer0o/config"><img src="https://dotfyle.com/sorcerer0o/config/badges/plugin-manager?style=flat" /></a>
 
 
+## Neovim in Motion · 90 秒配置宣传片
+
+[![Neovim configuration film](https://github.com/sorcerer0o/config/releases/download/promo-2026-11-06/poster.png)](https://github.com/sorcerer0o/config/releases/download/promo-2026-11-06/nvim_promo_90s.mp4)
+
+**[观看 90 秒宣传片 / Watch the film](https://github.com/sorcerer0o/config/releases/download/promo-2026-11-06/nvim_promo_90s.mp4)** · [分镜与配置说明 / Storyboard](https://github.com/sorcerer0o/config/releases/download/promo-2026-11-06/STORYBOARD.md)
+
+真实 Neovim 画面 · 中英双语 · 1080p / 30 fps · 原创配乐
+
 ## Install Instructions
 
  > Install requires Neovim 0.9+. Always review the code before installing a configuration.
