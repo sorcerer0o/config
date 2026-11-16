@@ -1,5 +1,6 @@
 local opt = vim.opt
 
+opt.fileformat = "unix"
 opt.number = true
 opt.relativenumber = true
 opt.signcolumn = 'auto'
@@ -10,13 +11,13 @@ opt.wrap = true
 opt.linebreak = true
 opt.breakindent = true
 opt.smoothscroll = true
-opt.encoding = 'utf-8'
 
 opt.tabstop = 4
 opt.shiftwidth = 4
-opt.softtabstop = -1
+opt.softtabstop = 4
 opt.expandtab = true
 opt.autoindent = true
+opt.shiftround = true
 
 opt.ignorecase = true
 opt.smartcase = true
@@ -27,27 +28,20 @@ opt.inccommand = 'split'
 opt.wildmode = 'longest:full,full'
 opt.wildoptions = 'fuzzy,pum,tagfile'
 opt.wildignorecase = true
-opt.completeopt = { 'fuzzy', 'menuone', 'noselect', 'noinsert', 'popup' }
+opt.completeopt = { 'fuzzy', 'menuone', 'noselect', 'popup' }
+opt.jumpoptions = { 'stack', 'view' }
+opt.autocomplete = true
 
 opt.splitright = true
 opt.splitbelow = true
 opt.splitkeep = 'screen'
-opt.switchbuf = 'useopen,usetab'
-opt.hidden = true
+opt.switchbuf = 'useopen'
 
 opt.confirm = true
 opt.autoread = true
-opt.writebackup = true
-opt.swapfile = true
 opt.updatetime = 300
 opt.clipboard = 'unnamedplus'
--- opt.cmdheight = 0
 
-vim.cmd('filetype plugin indent on')
-vim.cmd('syntax enable')
-vim.cmd('silent detach!')
-
-vim.cmd.packadd('nvim.undotree')
 vim.cmd.packadd('nvim.difftool')
 
 vim.diagnostic.config({
@@ -59,7 +53,7 @@ vim.diagnostic.config({
 
 vim.pack.add({
     { src = 'https://github.com/neovim/nvim-lspconfig' },
-    { src = 'https://github.com/nvim-treesitter/nvim-treesitter' }
+    { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },
 })
 
 opt.background = 'dark'
@@ -101,12 +95,10 @@ vim.lsp.config('clangd', {
         '--pch-storage=memory',
         '--fallback-style=Google',
         '--completion-style=detailed',
-        '--header-insertion=iwyu',
-        '--header-insertion-decorators',
         '--experimental-modules-support'
     },
     filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
-    root_markers = {  
+    root_markers = {
         '.clangd',
         '.clang-tidy',
         '.clang-format',
@@ -148,64 +140,68 @@ vim.lsp.config('jsonls', {
     }
 })
 
-vim.api.nvim_create_autocmd('LspAttach', {
-    group = vim.api.nvim_create_augroup('user_lsp_attach', { clear = true }),
-    callback = function(ev)
-        local client = vim.lsp.get_client_by_id(ev.data.client_id)
-        vim.lsp.completion.enable(true, ev.data.client_id, ev.buf, {
-            autotrigger = true,
-        })
-    --     vim.lsp.inlay_hint.enable(true, {
-    --         bufnr = ev.buf,
-    --         client_id = ev.data.client_id,
-    --     })
-    end
-})
-
 vim.lsp.enable('lua_ls')
 vim.lsp.enable('clangd')
 vim.lsp.enable('pyright')
 vim.lsp.enable('jsonls')
 
+vim.api.nvim_create_autocmd('LspAttach', {
+    group = vim.api.nvim_create_augroup('user_lsp_attach', { clear = true }),
+    callback = function(ev)
+        vim.lsp.completion.enable(true, ev.data.client_id, ev.buf, {
+            autotrigger = true
+        })
+        vim.lsp.inlay_hint.enable(true, { bufnr = ev.buf })
+    end
+})
+
 require('vim._core.ui2').enable({
     enable = true, -- Whether to enable or disable the UI.
-    msg = { -- Options related to the message module.
+    msg = {
         targets = 'cmd',
-        timeout = 4000
-        }
-    })
+        dialog = { -- Options related to dialog window.
+            height = 0.5, -- Maximum height.
+        },
+        msg = { -- Options related to msg window.
+            height = 0.5, -- Maximum height.
+        },
+        pager = { -- Options related to message window.
+            height = 0.999, -- Maximum height.
+        },
+    },
+})
 
-    require('nvim-treesitter').setup({
-        install_dir = vim.fn.stdpath('data') .. '/site'
-    })
-    require('nvim-treesitter').install({
-        'c',
-        'cpp',
-        'objc',
-        'lua',
-        'python',
-        'vim',
-        'vimdoc',
-        'json',
-        'json5'
-    })
+vim.api.nvim_create_autocmd("BufReadPost", {
+  callback = function()
+    local mark = vim.api.nvim_buf_get_mark(0, '"')
+    local line_count = vim.api.nvim_buf_line_count(0)
+    if mark[1] > 0 and mark[1] <= line_count then
+      vim.api.nvim_win_set_cursor(0, mark)
+    end
+  end,
+})
 
-    vim.api.nvim_create_autocmd('FileType', {
-        group = vim.api.nvim_create_augroup('ts_highlight', { clear = true }),
-        callback = function(ev)
-            pcall(vim.treesitter.start, ev.buf)
-        end,
-    })
+require('nvim-treesitter').setup({
+    install_dir = vim.fn.stdpath('data') .. '/site'
+})
+require('nvim-treesitter').install({'c', 'cpp', 'objc', 'lua', 'python', 'vim', 'vimdoc', 'json', 'json5'})
 
-    vim.api.nvim_create_autocmd('FileType', {
-        group = vim.api.nvim_create_augroup('google_cpp_style', { clear = true }),
-        pattern = { 'c', 'cpp', 'objc', 'objcpp' },
-        callback = function()
-            vim.opt_local.expandtab = true
-            vim.opt_local.tabstop = 2
-            vim.opt_local.shiftwidth = 2
-            vim.opt_local.softtabstop = 2
-            vim.opt_local.textwidth = 80
-            vim.opt_local.formatexpr = "v:lua.vim.lsp.formatexpr()"
-        end,
-    })
+vim.api.nvim_create_autocmd('FileType', {
+    group = vim.api.nvim_create_augroup('ts_highlight', { clear = true }),
+    callback = function(ev)
+        pcall(vim.treesitter.start, ev.buf)
+    end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+    group = vim.api.nvim_create_augroup('google_cpp_style', { clear = true }),
+    pattern = { 'c', 'cpp', 'objc', 'objcpp' },
+    callback = function()
+        vim.opt_local.expandtab = true
+        vim.opt_local.tabstop = 2
+        vim.opt_local.shiftwidth = 2
+        vim.opt_local.softtabstop = 2
+        vim.opt_local.textwidth = 80
+        vim.opt_local.formatexpr = "v:lua.vim.lsp.formatexpr()"
+    end,
+})
