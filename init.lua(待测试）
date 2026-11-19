@@ -1,186 +1,318 @@
-local opt = vim.opt
+---@class UserTreeSitterState
+---@field installed table<string, boolean>
+---@field installing table<string, boolean>
 
+local opt = vim.opt
+local api = vim.api
+
+opt.fileformat = "unix"
 opt.number = true
 opt.relativenumber = true
-opt.signcolumn = 'auto'
+opt.signcolumn = "auto"
 opt.laststatus = 2
 opt.showcmd = true
-opt.winborder = 'none'
+opt.winborder = "none"
 opt.wrap = true
 opt.linebreak = true
 opt.breakindent = true
 opt.smoothscroll = true
-opt.encoding = 'utf-8'
 
 opt.tabstop = 4
 opt.shiftwidth = 4
 opt.softtabstop = 4
 opt.expandtab = true
 opt.autoindent = true
-opt.smartindent = false
+opt.shiftround = true
 
 opt.ignorecase = true
 opt.smartcase = true
 opt.hlsearch = true
 opt.incsearch = true
-opt.inccommand = 'split'
+opt.inccommand = "split"
 
-opt.wildmode = 'longest:full,full'
-opt.wildoptions = 'fuzzy,pum,tagfile'
+opt.wildmode = "longest:full,full"
+opt.wildoptions = "fuzzy,pum,tagfile"
 opt.wildignorecase = true
-opt.complete = { 'o','.','w','b','u','t' }
-opt.completeopt = { 'fuzzy', 'menuone', 'noselect', 'popup' }
+opt.complete = { '.','w','b','u','t' }
+opt.completeopt = { "fuzzy", "menuone", "noselect", "popup" }
+opt.jumpoptions = { "stack", "view" }
 opt.autocomplete = false
 
 opt.splitright = true
 opt.splitbelow = true
-opt.splitkeep = 'screen'
-opt.switchbuf = 'useopen,usetab'
-opt.hidden = true
+opt.splitkeep = "screen"
+opt.switchbuf = "useopen"
 
-opt.confirm = true
+opt.confirm = false
+opt.hidden = false
 opt.autoread = true
-opt.writebackup = true
-opt.swapfile = true
 opt.updatetime = 300
-opt.clipboard = 'unnamedplus'
+opt.clipboard = "unnamedplus"
 
-vim.cmd('filetype plugin indent on')
-vim.cmd('syntax enable')
+vim.cmd.packadd("nvim.difftool")
 
-vim.cmd.packadd('nvim.undotree')
-vim.cmd.packadd('nvim.difftool')
-
-vim.diagnostic.config({
-    signs = true,
-    underline = true,
-    severity_sort = true,
-    float = { wrap = true, scope = 'cursor', focusable = true }
-})
+-- Plugin and external-tool management ---------------------------------------
 
 vim.pack.add({
-    { src = 'https://github.com/neovim/nvim-lspconfig' },
-    { src = 'https://github.com/nvim-treesitter/nvim-treesitter' }
+    { src = "https://github.com/neovim/nvim-lspconfig" },
+    { src = "https://github.com/nvim-treesitter/nvim-treesitter" },
+    { src = "https://github.com/williamboman/mason.nvim" },
+    { src = "https://github.com/mfussenegger/nvim-lint" },
+    { src = "https://github.com/ibhagwan/fzf-lua" },
+    { src = "https://github.com/lewis6991/gitsigns.nvim" },
+    { src = "https://github.com/nvim-lua/plenary.nvim" },
+    { src = "https://github.com/nvim-neotest/nvim-nio" },
+    { src = "https://github.com/nvim-neotest/neotest" },
+    { src = "https://github.com/nvim-neotest/neotest-python" },
 })
 
-opt.background = 'dark'
-opt.termguicolors = true
+require("mason").setup({
+    ui = { border = "none" },
+})
 
-vim.lsp.config('lua_ls', {
-    cmd = { 'lua-language-server' },
-    filetypes = { 'lua' },
+require("gitsigns").setup()
+
+require("neotest").setup({
+    adapters = {
+        require("neotest-python")({
+            runner = "pytest",
+            dap = { justMyCode = true },
+        }),
+    },
+})
+
+-- Diagnostics and language servers ------------------------------------------
+
+opt.background = "dark"
+opt.termguicolors = true
+vim.cmd.colorscheme("default")
+
+vim.lsp.config("lua_ls", {
+    cmd = { "lua-language-server" },
+    filetypes = { "lua" },
     root_markers = {
-        '.luarc.json',
-        '.luarc.jsonc',
-        '.emmyrc.json',
-        '.luacheckrc',
-        'stylua.toml',
-        '.stylua.toml',
-        'selene.toml',
-        'selene.yml',
-        '.git',
+        ".luarc.json",
+        ".luarc.jsonc",
+        ".emmyrc.json",
+        ".luacheckrc",
+        "stylua.toml",
+        ".stylua.toml",
+        "selene.toml",
+        "selene.yml",
+        ".git",
     },
     settings = {
         Lua = {
-            runtime = { version = 'LuaJIT' },
-            diagnostics = { globals = { 'vim' } },
+            runtime = { version = "LuaJIT" },
+            diagnostics = { globals = { "vim" } },
             workspace = {
                 checkThirdParty = false,
                 library = { vim.env.VIMRUNTIME },
-            }
-        }
-    }
-})
-
-vim.lsp.config('clangd', {
-    cmd = {
-        'clangd',
-        '--background-index',
-        '--background-index-priority=normal',
-        '--clang-tidy',
-        '--pch-storage=memory',
-        '--fallback-style=Google',
-        '--completion-style=detailed',
-        '--experimental-modules-support'
+            },
+        },
     },
-    filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
-    root_markers = {  
-        '.clangd',
-        '.clang-tidy',
-        '.clang-format',
-        'compile_commands.json',
-        'compile_flags.txt',
-        '.git'
-    }
 })
 
-vim.lsp.config('pyright', {
-    cmd = { 'pyright-langserver', '--stdio' },
-    filetypes = { 'python' },
+vim.lsp.config("clangd", {
+    cmd = {
+        "clangd",
+        "--background-index",
+        "--background-index-priority=normal",
+        "--clang-tidy",
+        "--pch-storage=memory",
+        "--fallback-style=Google",
+        "--completion-style=detailed",
+        "--experimental-modules-support",
+    },
+    filetypes = { "c", "cpp", "objc", "objcpp" },
     root_markers = {
-        'pyrightconfig.json',
-        'pyproject.toml',
-        'setup.py',
-        'setup.cfg',
-        'requirements.txt',
-        'Pipfile',
-        '.git'
-    }
+        ".clangd",
+        ".clang-tidy",
+        ".clang-format",
+        "compile_commands.json",
+        "compile_flags.txt",
+        ".git",
+    },
 })
 
-vim.lsp.config('jsonls', {
-    cmd = { 'vscode-json-language-server', '--stdio' },
-    filetypes = { 'json', 'jsonc' },
+vim.lsp.config("pyright", {
+    cmd = { "pyright-langserver", "--stdio" },
+    filetypes = { "python" },
     root_markers = {
-        'package.json',
-        'tsconfig.json',
-        '.editorconfig',
-        '.git'
+        "pyrightconfig.json",
+        "pyproject.toml",
+        "setup.py",
+        "setup.cfg",
+        "requirements.txt",
+        "Pipfile",
+        ".git",
+    },
+})
+
+vim.lsp.config("jsonls", {
+    cmd = { "vscode-json-language-server", "--stdio" },
+    filetypes = { "json", "jsonc" },
+    root_markers = {
+        "package.json",
+        "tsconfig.json",
+        ".editorconfig",
+        ".git",
     },
     init_options = { provideFormatter = true },
     settings = {
         json = {
             format = { enable = true },
-            validate = { enable = true }
-        }
-    }
+            validate = { enable = true },
+        },
+    },
 })
 
-vim.api.nvim_create_autocmd('LspAttach', {
-    group = vim.api.nvim_create_augroup('user_lsp_attach', { clear = true }),
-    callback = function(ev)
-        vim.lsp.completion.enable(true, ev.data.client_id, ev.buf, {
+vim.lsp.config("texlab", {
+    cmd = { "texlab" },
+    filetypes = { "tex", "plaintex", "bib" },
+    root_markers = {
+        ".git",
+        ".latexmkrc",
+        "latexmkrc",
+        ".texlabroot",
+        "texlabroot",
+        "Tectonic.toml",
+    },
+})
+
+vim.lsp.enable({ "lua_ls", "clangd", "pyright", "jsonls", "texlab" })
+
+api.nvim_create_autocmd("LspAttach", {
+    group = api.nvim_create_augroup("user_lsp_attach", { clear = true }),
+    callback = function(event)
+        local buffer = event.buf
+        vim.lsp.completion.enable(true, event.data.client_id, buffer, {
             autotrigger = true,
         })
+        vim.lsp.inlay_hint.enable(true, { bufnr = buffer })
+    end,
+})
+
+require("vim._core.ui2").enable({
+    enable = true,
+    msg = {
+        targets = "cmd",
+        dialog = { height = 0.5 },
+        msg = { height = 0.5 },
+        pager = { height = 0.999 },
+    },
+})
+
+api.nvim_create_autocmd("BufReadPost", {
+    group = api.nvim_create_augroup("user_restore_cursor", { clear = true }),
+    callback = function()
+        local mark = api.nvim_buf_get_mark(0, '"')
+        local line_count = api.nvim_buf_line_count(0)
+        if mark[1] > 0 and mark[1] <= line_count then
+            api.nvim_win_set_cursor(0, mark)
+        end
+    end,
+})
+
+-- Treesitter and language-specific behavior --------------------------------
+
+---@type table<string, string>
+local treesitter_filetype_aliases = {
+    jsonc = "json",
+    objcpp = "objc",
+    sh = "bash",
+    tex = "latex",
+    plaintex = "latex",
+    bib = "bibtex",
+}
+
+for filetype, parser in pairs(treesitter_filetype_aliases) do
+    vim.treesitter.language.register(parser, filetype)
+end
+
+local treesitter = require("nvim-treesitter")
+treesitter.setup({
+    install_dir = vim.fn.stdpath("data") .. "/site",
+})
+
+---@type UserTreeSitterState
+local treesitter_state = {
+    installed = {},
+    installing = {},
+}
+
+for _, parser_name in ipairs(treesitter.get_installed()) do
+    treesitter_state.installed[parser_name] = true
+end
+
+local parser_definitions = require("nvim-treesitter.parsers")
+
+---@param filetype string
+---@return string?
+local function resolve_parser(filetype)
+    local parser_name = treesitter_filetype_aliases[filetype] or vim.treesitter.language.get_lang(filetype) or filetype
+
+    if parser_definitions[parser_name] then
+        return parser_name
     end
-})
+end
 
-vim.lsp.enable('lua_ls')
-vim.lsp.enable('clangd')
-vim.lsp.enable('pyright')
-vim.lsp.enable('jsonls')
+---@param buffer integer
+local function start_highlighting(buffer)
+    vim.treesitter.start(buffer)
+end
 
-require('vim._core.ui2').enable()
-
-require('nvim-treesitter').setup({
-    install_dir = vim.fn.stdpath('data') .. '/site'
-})
-
-vim.api.nvim_create_autocmd('FileType', {
-    group = vim.api.nvim_create_augroup('ts_highlight', { clear = true }),
-    callback = function(ev)
-        local lang = vim.treesitter.language.get_lang(ev.match)
-        if lang and require('nvim-treesitter.parsers')[lang] then
-            require('nvim-treesitter').install({ lang }):await(function()
-                pcall(vim.treesitter.start, ev.buf)
-            end)
+---@param parser_name string
+local function start_buffers_for_parser(parser_name)
+    for _, buffer in ipairs(api.nvim_list_bufs()) do
+        if api.nvim_buf_is_loaded(buffer) and resolve_parser(vim.bo[buffer].filetype) == parser_name then
+            start_highlighting(buffer)
         end
     end
+end
+
+---@param buffer integer
+---@param filetype string
+local function ensure_parser(buffer, filetype)
+    local parser_name = resolve_parser(filetype)
+    if not parser_name then
+        return
+    end
+
+    if treesitter_state.installed[parser_name] then
+        start_highlighting(buffer)
+        return
+    end
+
+    if treesitter_state.installing[parser_name] then
+        return
+    end
+
+    treesitter_state.installing[parser_name] = true
+    local task = treesitter.install({ parser_name }, { summary = false })
+    task:await(function(install_error)
+        treesitter_state.installing[parser_name] = nil
+        if install_error then
+            return
+        end
+
+        treesitter_state.installed[parser_name] = true
+        vim.schedule(function()
+            start_buffers_for_parser(parser_name)
+        end)
+    end)
+end
+
+api.nvim_create_autocmd("FileType", {
+    group = api.nvim_create_augroup("user_treesitter_lazy", { clear = true }),
+    callback = function(event)
+        ensure_parser(event.buf, event.match)
+    end,
 })
 
-vim.api.nvim_create_autocmd('FileType', {
-    group = vim.api.nvim_create_augroup('google_cpp_style', { clear = true }),
-    pattern = { 'c', 'cpp', 'objc', 'objcpp' },
+api.nvim_create_autocmd("FileType", {
+    group = api.nvim_create_augroup("user_cpp_style", { clear = true }),
+    pattern = { "c", "cpp", "objc", "objcpp" },
     callback = function()
         vim.opt_local.expandtab = true
         vim.opt_local.tabstop = 2
@@ -189,4 +321,34 @@ vim.api.nvim_create_autocmd('FileType', {
         vim.opt_local.textwidth = 80
         vim.opt_local.formatexpr = "v:lua.vim.lsp.formatexpr()"
     end,
+})
+
+-- Linting and tests --------------------------------------------------------
+
+local lint = require("lint")
+lint.linters_by_ft = {
+    lua = { "luacheck" },
+    python = { "ruff" },
+}
+
+api.nvim_create_autocmd("BufWritePost", {
+    group = api.nvim_create_augroup("user_lint_on_save", { clear = true }),
+    callback = function()
+        lint.try_lint()
+    end,
+})
+
+---@type string[]
+local tools_to_install = {
+    "lua-language-server",
+    "texlab",
+    "stylua",
+    "luacheck",
+    "clang-tidy",
+}
+
+api.nvim_create_user_command("UserToolsInstall", function()
+    vim.cmd("MasonInstall " .. table.concat(tools_to_install, " "))
+end, {
+    desc = "Install required external tools",
 })
