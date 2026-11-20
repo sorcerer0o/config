@@ -1,0 +1,9 @@
+Import-Module PSReadLine
+Import-Module PSFzf
+
+Set-PSReadLineOption -EditMode Vi
+Set-PsFzfOption -TabExpansion
+Set-PsFzfOption -EnableFd
+
+$env:HTTP_PROXY  = "http://127.0.0.1:7897"
+$env:HTTPS_PROXY = "http://127.0.0.1:7897"
